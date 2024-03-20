@@ -1,0 +1,24 @@
+.chatbox{
+    border-radius: 5px;
+}
+.messg{
+    border-top-right-radius: 15px;
+}
+.right_chat .chat_directr{
+    border-bottom-left-radius: 15px;
+}
+.left_chat{
+    background-color: rgb(146, 146, 245);
+    position: relative;
+    left: 10%;
+    flex-direction: row-reverse;
+}
+
+.right_chat{
+    background: rgb(161, 123, 18);
+    position: relative;
+    left: 90%;
+}
+.left_chat .chat_directr{
+    border-bottom-right-radius: 15px;
+}
