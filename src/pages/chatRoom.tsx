@@ -1,23 +1,8 @@
 
-import { Button } from "@/components/ui/button"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -27,48 +12,104 @@ import { io, Socket } from "socket.io-client";
 import ChatBox from "@/components/chat_box/chatBox"
 import { useEffect, useState } from "react"
 
-const tags = Array.from({ length: 50 }).map(
-    (_, i, a) => `v1.2.0-beta.${a.length - i}`
-)
+import { Button } from "@/components/ui/button"
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
 
+const formSchema = z.object({
+    textMessage: z.string().min(2).max(500),
+})
 function ChatRoom() {
 
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            textMessage: "",
+        },
+    })
+
+    // 2. Define a submit handler.
+    function onSubmit(values: z.infer<typeof formSchema>) {
+        // Do something with the form values.
+        // ✅ This will be type-safe and validated.
+        sendMessage(values);
+    }
+
+    var count = 0;
     const [socket, setSocket] = useState<Socket | null>(null);
     useEffect(() => {
-        setSocket(io("http://localhost:8000", {
+        const newSocket = io("http://localhost:8000", {
             withCredentials: true
-          }));
-          console.log("socket");
+        });
+        setSocket(newSocket);
+    
+        return () => {
+            newSocket.disconnect();
+        };
     }, []);
+    
+    useEffect(() => {
+        if (socket) {
+            socket.on("message", (data) => {
+                console.log("Received data from the server:", data);
+            });
+        }
+    
+        return () => {
+            if (socket) {
+                socket.off("message");
+            }
+        };
+    }, [socket]);
 
-    socket?.on("connect", () => {
-        console.log("connected");
-    })
+   
+    
 
-    socket?.on("message",(data)=>{
-        console.log("this is the received data ",data);
-    })
+    
 
-    function sendMessage(){
-        socket?.emit("message", "Hello from client");
+    function sendMessage({ textMessage}: { textMessage: string}) {
+        console.log("this is the message from client",textMessage);
+        socket?.emit(`message`, textMessage);
     }
     return (
         <div className="flex justify-center align-center relative flex-col w-[90%] gap-[20px] h-[100%]">
             <ScrollArea className=" w-48 rounded-md relative border h-[80%] w-[100%]">
                 <div className="w-[100%] chat_messages">
-                  
-           
-                        < div className="w-[100%]" >
-                            <ChatBox className={"left_chat"}/>
-                            <Separator />
-                        </div>
-                   
+
+
+                    < div className="w-[100%]" >
+                        <ChatBox className={"left_chat"} />
+                        <Separator />
+                    </div>
+
                 </div>
             </ScrollArea>
             <div className="h-[10%] w-[100%] bg-blue-100 flex justify-center items-center">
-                <form>
-                    
-                </form>
+
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        <FormField
+                            control={form.control}
+                            name="textMessage"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Input placeholder="type your message here " {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit">Submit</Button>
+                    </form>
+                </Form>
+
             </div>
         </div>
     );
