@@ -35,10 +35,10 @@ function ChatRoom() {
     })
 
     // 2. Define a submit handler.
-    function submitHandler(values: z.infer<typeof formSchema>) {
+    function submitHandler(values: z.infer<typeof formSchema>,type:string) {
         // Do something with the form values.
         // ✅ This will be type-safe and validated.
-        sendMessage(values);
+        sendMessage(values,type);
     }
 
     const [socket, setSocket] = useState<Socket | null>(null);
@@ -58,6 +58,9 @@ function ChatRoom() {
             socket.on("message", (data) => {
                 console.log("Received data from the server:", data);
             });
+            socket.on("broadcast", (data) => {
+                console.log("Received data from the server:", data);
+            })
         }
 
         return () => {
@@ -88,13 +91,18 @@ function ChatRoom() {
 
 
 
-    function sendMessage({ textMessage }: { textMessage: string }) {
-        console.log("this is the message from client", textMessage);
-        socket?.emit(`message`, textMessage);
+    function sendMessage(message:z.infer<typeof formSchema>,type:string) {
+        console.log("this is the message from client", message);
+        if(type === "message"){
+            socket?.emit("message", message.textMessage);
+        }
+        else if(type === "broadcast"){
+            socket?.emit("broadcast", message.textMessage);
+       }
     }
     return (
         <div className="flex justify-center align-center relative flex-col w-[90%] gap-[20px] h-[100%]">
-            <ScrollArea className=" w-48 rounded-md relative border h-[80%] w-[100%]">
+            <ScrollArea className=" w-48 rounded-md relative border h-[0%] w-[100%]">
                 <div className="w-[100%] chat_messages">
 
 
@@ -125,8 +133,12 @@ function ChatRoom() {
                         />
                         <Button type="submit" onClick={(event) => {
                             event.preventDefault();
-                            submitHandler(form.getValues())
-                        }}>Submit</Button>
+                            submitHandler(form.getValues(),"message")
+                        }}>Submit </Button>
+                        <Button type="submit" onClick={(event) => {
+                            event.preventDefault();
+                            submitHandler(form.getValues(),"broadcast")
+                        }}>broadcast all</Button>
                     </form>
                 </Form>
 
