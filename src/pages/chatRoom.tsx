@@ -35,32 +35,31 @@ function ChatRoom() {
     })
 
     // 2. Define a submit handler.
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    function submitHandler(values: z.infer<typeof formSchema>) {
         // Do something with the form values.
         // ✅ This will be type-safe and validated.
         sendMessage(values);
     }
 
-    var count = 0;
     const [socket, setSocket] = useState<Socket | null>(null);
     useEffect(() => {
         const newSocket = io("http://localhost:8000", {
             withCredentials: true
         });
         setSocket(newSocket);
-    
+
         return () => {
             newSocket.disconnect();
         };
     }, []);
-    
+
     useEffect(() => {
         if (socket) {
             socket.on("message", (data) => {
                 console.log("Received data from the server:", data);
             });
         }
-    
+
         return () => {
             if (socket) {
                 socket.off("message");
@@ -68,13 +67,29 @@ function ChatRoom() {
         };
     }, [socket]);
 
-   
-    
 
-    
+    {/* Duplicate messages are received due to adding the event listener multiple times on the client side, often within a React functional component, without removing previous listeners. To resolve, ensure setting up the listener once during component mount and implement cleanup using React's useEffect hook, preventing redundant event registrations and duplicate message reception. */ }
+    // useEffect(() => {
+    //     setSocket(io("http://localhost:8000", {
+    //         withCredentials: true
+    //       }));
+    //       console.log("socket");
+    // }, []);
 
-    function sendMessage({ textMessage}: { textMessage: string}) {
-        console.log("this is the message from client",textMessage);
+    // socket?.on("connect", () => {
+    //     console.log("connected");
+    // })
+
+    // socket?.on("message",(data)=>{
+    //     console.log("this is the received data ",data);
+    // })
+
+
+
+
+
+    function sendMessage({ textMessage }: { textMessage: string }) {
+        console.log("this is the message from client", textMessage);
         socket?.emit(`message`, textMessage);
     }
     return (
@@ -93,7 +108,9 @@ function ChatRoom() {
             <div className="h-[10%] w-[100%] bg-blue-100 flex justify-center items-center">
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <form onSubmit={(event) => {
+                        event.preventDefault();
+                    }} className="space-y-8">
                         <FormField
                             control={form.control}
                             name="textMessage"
@@ -106,7 +123,10 @@ function ChatRoom() {
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit">Submit</Button>
+                        <Button type="submit" onClick={(event) => {
+                            event.preventDefault();
+                            submitHandler(form.getValues())
+                        }}>Submit</Button>
                     </form>
                 </Form>
 
